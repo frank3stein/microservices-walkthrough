@@ -36,24 +36,24 @@ spec:
                 configMapKeyRef:
                   name: env-config
                   key: JWT_SECRET
-            - name: POSTGRES_DB
+            - name: POSTGRESS_DB
               valueFrom:
                 configMapKeyRef:
                   name: env-config
-                  key: POSTGRES_DB
-            - name: POSTGRES_HOST
+                  key: POSTGRESS_DB
+            - name: POSTGRESS_HOST
               valueFrom:
                 configMapKeyRef:
                   name: env-config
-                  key: POSTGRES_HOST
-            - name: POSTGRES_PASSWORD
+                  key: POSTGRESS_HOST
+            - name: POSTGRESS_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: env-secret
-                  key: POSTGRES_PASSWORD
-            - name: POSTGRES_USERNAME
+                  key: POSTGRESS_PASSWORD
+            - name: POSTGRESS_USERNAME
               valueFrom:
                 secretKeyRef:
                   name: env-secret
-                  key: POSTGRES_USERNAME
+                  key: POSTGRESS_USERNAME
       restartPolicy: Always

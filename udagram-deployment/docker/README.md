@@ -1,14 +1,3 @@
-# Udagram Image Filtering Microservice
-
-Udagram is a simple cloud application developed alongside the Udacity Cloud Engineering Nanodegree. It allows users to register and log into a web client, post photos to the feed, and process photos using an image filtering microservice.
-
-# Solution Overview
-`docker-compose` isn't necessarily required for deploying to Kubernetes. However, it is useful because it helps you conceptualize the relationship between the containers and allows you to run all the containers locally.
-
-A container using nginx named `reverseproxy` is used. It helps add another layer between the frontend and API so that the frontend only uses a single endpoint and doesn't realize it's deployed separately. This is one approach and not necessarily the only way to deploy the services.
-
-## Setup Instructions
-
 ### Environment Variables
 Set environment variables for config values such as the database connection. The required environment values can be found in the `docker-compose.yaml` file.
 

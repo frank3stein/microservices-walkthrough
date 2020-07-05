@@ -1,72 +1,106 @@
 # Udagram Image Filtering Application
 
-Udagram is a simple cloud application developed alongside the Udacity Cloud Engineering Nanodegree. It allows users to register and log into a web client, post photos to the feed, and process photos using an image filtering microservice.
-
 The project is split into two parts:
 1. Frontend - Angular web application built with Ionic Framework
 2. Backend RESTful API - Node-Express application
-
-# Solution Notes
-* With the solution, we can run the application through Docker rather than independently installing packages and running the Backend API and Frontend App. Refer to the `README` in `udagram-deployment` on notes on how to run with `docker-compose`.
 
 * The backend API has been decomposed into two independent microservices for users and for the feed. As such, there is a bit of duplicate code across the two codebases. In real-world scenarios, this would often be done to get our microservice up and running. To clean this up, the approach would be to abstract out common code into a library such as an internal `npm` package that each project would use.
 
 ## Getting Started
 > _tip_: it's recommended that you start with getting the backend API running since the frontend web application depends on the API.
-### Prerequisite
-1. The depends on the Node Package Manager (NPM). You will need to download and install Node from [https://nodejs.com/en/download](https://nodejs.org/en/download/). This will allow you to be able to run `npm` commands.
-2. Environment variables will need to be set. These environment variables include database connection details that should not be hard-coded into the application code. A file named `set_env.sh` has been prepared as an optional tool to help you configure these variables on your local development environment.
+### Prerequisites
 
-### Database
-Create a PostgreSQL database either locally or on AWS RDS. Set the config values for environment variables prefixed with `POSTGRES_` in `set_env.sh`.
+You need to create a database and a s3 bucket with appropriate permissions. S3 bucket will be used to upload the images and database to track the users and their feed.
 
-### S3
-Create an AWS S3 bucket. Set the config values for environment variables prefixed with `AWS_` in `set_env.sh`.
+After you have created these resources, you need to set the environment variables. You can check the `udagram-deployment/docker/docker-compose.yaml` file in order to see which environment variables you need to set. 
 
-### Backend API
-* To download all the package dependencies, run the command from the directory `udagram-api/`:
-    ```bash
-    npm install .
-    ```
-* To run the application locally, run:
-    ```bash
-    npm run dev
-    ```
-* You can visit `http://localhost:8080/api/v0/feed` in your web browser to verify that the application is running. You should see a JSON payload. Feel free to play around with Postman to test the API's.
+```yaml
+      POSTGRESS_USERNAME: $POSTGRESS_USERNAME
+      POSTGRESS_PASSWORD: $POSTGRESS_PASSWORD
+      POSTGRESS_DB: $POSTGRESS_DB
+      POSTGRESS_HOST: $POSTGRESS_HOST
+      AWS_REGION: $AWS_REGION
+      AWS_PROFILE: $AWS_PROFILE
+      AWS_BUCKET: $AWS_BUCKET
+      JWT_SECRET: $JWT_SECRET
+```
 
-### Frontend App
-* To download all the package dependencies, run the command from the directory `udagram-frontend/`:
-    ```bash
-    npm install .
-    ```
-* Install Ionic Framework's Command Line tools for us to build and run the application:
-    ```bash
-    npm install -g ionic
-    ```
-* Prepare your application by compiling them into static files.
-    ```bash
-    ionic build
-    ```
-* Run the application locally using files created from the `ionic build` command.
-    ```bash
-    ionic serve
-    ```
-* You can visit `http://localhost:8100` in your web browser to verify that the application is running. You should see a web interface.
+I have written scripts in order to ease the initial steps required. First make sure the scripts have required permissions
 
-## Tips
-1. Take a look at `udagram-api` -- does it look like we can divide it into two modules to be deployed as separate microservices?
-2. The `.dockerignore` file is included for your convenience to not copy `node_modules`. Copying this over into a Docker container might cause issues if your local environment is a different operating system than the Docker image (ex. Windows or MacOS vs. Linux).
-3. It's useful to "lint" your code so that changes in the codebase adhere to a coding standard. This helps alleviate issues when developers use different styles of coding. `eslint` has been set up for TypeScript in the codebase for you. To lint your code, run the following:
-    ```bash
-    npx eslint --ext .js,.ts src/
-    ```
-    To have your code fixed automatically, run
-    ```bash
-    npx eslint --ext .js,.ts src/ --fix
-    ```
-4. Over time, our code will become outdated and inevitably run into security vulnerabilities. To address them, you can run:
-    ```bash
-    npm audit fix
-    ```
-5. In `set_env.sh`, environment variables are set with `export $VAR=value`. Setting it this way is not permanent; every time you open a new terminal, you will have to run `set_env.sh` to reconfigure your environment variables. To verify if your environment variable is set, you can check the variable with a command like `echo $POSTGRES_USERNAME`.# microservices-walkthrough
-# microservices-walkthrough
+```bash
+chmod +x ./build-image.sh ./port-forward.sh ./update_deployment.sh ./udagram-deployment/k8s/apply_deployment.sh
+```
+
+You can build the images with the build_image script(or you can use docker compose to build them).
+
+To test it locally in containers, you can run `docker-compose up` in the udagram-deployment/docker/ folder. 
+
+
+To run it locally in a cluster, you need to make sure to install minikube with virtualization software. Additionally you will need kubectl to control the cluster. Refer to the documentation on how to install these tools. Afterwards you can run  You need to expose the ports with port forwarding to your local environment the update_deployment script to apply the deployments with their respective services. 
+
+The environment variables will be missing from the deployment as the aws-secret and configmaps for the enviornment variables are gitignored. You will need to create 3 files,
+
+### aws_secret.yaml
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-secret
+type: Opaque
+data:
+  credentials: base64_AWS_credentials
+```
+
+To get the value of the credentials
+
+```bash
+cat ~/.aws/credentials | head -3 | base64
+```
+
+This will get the first 3 lines of the credentials file which is the default aws profile and pipe to base64 to get the required value.
+
+### env-configmap.yaml
+
+Fill in the required values
+
+```yaml
+
+apiVersion: v1
+kind: ConfigMap
+data:
+  AWS_BUCKET: 
+  AWS_PROFILE: 
+  AWS_REGION: 
+  JWT_SECRET: 
+  POSTGRESS_DB: 
+  POSTGRESS_HOST: 
+  URL: http://localhost:8100
+metadata:
+  name: env-config
+```
+
+### env-secret.yaml
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: env-secret
+type: Opaque
+data:
+  POSTGRESS_USERNAME: base64_username
+  POSTGRESS_PASSWORD: base64_password
+```
+
+
+You can get the values easiy with 
+
+```bash
+# do not forget the n flag, otherwise there will be trailing spaces, learned my lesson the hard way.
+echo $POSTGRESS_USERNAME | base64
+echo $POSTGRESS_PASSWORD | base64
+```
+
+That should be enough to have your cluster working. If you have errors you can check the logs or run the describe command for the pods.
+

@@ -115,8 +115,8 @@ You can get the values easiy with
 
 ```bash
 # do not forget the n flag, otherwise there will be trailing spaces, learned my lesson the hard way.
-echo $POSTGRESS_USERNAME | base64
-echo $POSTGRESS_PASSWORD | base64
+echo -n $POSTGRESS_USERNAME | base64
+echo -n $POSTGRESS_PASSWORD | base64
 ```
 
 That should be enough to have your cluster working. If you have errors you can check the logs or run the describe command for the pods.

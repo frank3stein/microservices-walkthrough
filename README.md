@@ -1,5 +1,22 @@
 # Udagram Image Filtering Application
 
+## Working App
+
+- Home Screen - Logged in
+![Home Screen - Logged in](./screenshots/loggedin.png)
+- Upload Screen
+![Upload Screen](./screenshots/upload-screen.png)
+- Pre Upload Screen
+![Pre Upload Screen](./screenshots/pre-upload-screen.png)
+- Uploaded
+![Uploaded](./screenshots/uploaded.png)
+- Console
+![Console](./screenshots/port-forward.png)
+![Pods, Deployments, Services](./screenshots/pods-deployments-services.png)
+
+
+## Project
+
 The project is split into two parts:
 1. Frontend - Angular web application built with Ionic Framework
 2. Backend RESTful API - Node-Express application

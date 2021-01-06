@@ -4,6 +4,9 @@
 
 - Home Screen - Logged in
 ![Home Screen - Logged in](./screenshots/loggedin.png)
+- Home Screen on the Cluster - Logged in with my email
+![Home Screen - Cluster](./screenshots/udagram-home-page.png)
+
 - Upload Screen
 ![Upload Screen](./screenshots/upload-screen.png)
 - Pre Upload Screen
@@ -120,4 +123,99 @@ echo -n $POSTGRESS_PASSWORD | base64
 ```
 
 That should be enough to have your cluster working. If you have errors you can check the logs or run the describe command for the pods.
+
+## Create the RDS server
+
+Create a publically available RDS server. I have chosen Postgres SQL. 
+
+## Deploying to the cluster
+
+Install eksctl
+
+```bash
+brew tap weaveworks/tap
+
+brew install weaveworks/tap/eksctl
+
+eksctl version
+
+# create the cluster
+
+eksctl create cluster \
+  --name udagram \
+  --with-oidc \
+```
+
+By default it will create with 2 nodes. 
+
+
+Afterwards you need to modify the env-config and also the frontend environment file
+
+```js
+export const environment = {
+  production: false,
+  appName: 'Udagram',
+  apiHost: 'awsAssignedDomainForReverseProxy:8080/api/v0'
+};
+```
+You need to have your reverseproxy and frontend as type loadbalancer for aws to assign those IPs. 
+
+env-config 
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+data:
+  AWS_BUCKET: actualvalues
+  AWS_PROFILE:
+  AWS_REGION:
+  JWT_SECRET:
+  POSTGRESS_DB:
+  POSTGRESS_HOST:
+  URL: http://asdasdasdasdsad-asdasd.eu-central-1.elb.amazonaws.com:8100 # frontend Domain
+metadata:
+  name: env-config
+```
+
+When you apply the changes, you need to take down the deployments, so the new changes are picked up upon creationg by reapplying the config files.
+
+And you are done! The cluster is running. 
+
+## Setting up Autoscaling
+
+```bash
+ kubectl autoscale deployment backend-feed --cpu-percent=70 --min=1 --max=3
+```
+You will need to install a metrics server
+
+```bash
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.3.7/components.yaml
+
+# verify that it is running
+kubectl get deployment metrics-server -n kube-system
+
+kubectl get hpa
+```
+
+```
+
+```bash
+➜  k8s git:(master) ✗ kubectl get pods
+NAME                            READY   STATUS    RESTARTS   AGE
+backend-feed-64c74668b8-97tkr   1/1     Running   0          18m
+backend-user-844d8b7b94-wp98n   1/1     Running   0          18m
+frontend-55574cf4b5-rk97m       1/1     Running   0          28m
+reverseproxy-8487cd7dff-w66nm   1/1     Running   0          112m
+➜  k8s git:(master) ✗ kubectl get hpa
+NAME           REFERENCE                 TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+backend-feed   Deployment/backend-feed   0%/70%    1         3         1          3m6s
+➜  k8s git:(master) ✗ kubectl get svc
+NAME           TYPE           CLUSTER-IP       EXTERNAL-IP                                                                 PORT(S)          AGE
+backend-feed   ClusterIP      10.100.182.139   <none>                                                                      8080/TCP         113m
+backend-user   ClusterIP      10.100.46.193    <none>                                                                      8080/TCP         113m
+frontend       LoadBalancer   10.100.2.198     a8862877d9718406cb91c18eac8187fd-756950603.eu-central-1.elb.amazonaws.com   8100:30289/TCP   88m
+kubernetes     ClusterIP      10.100.0.1       <none>                                                                      443/TCP          3h24m
+reverseproxy   LoadBalancer   10.100.126.167   a93c0769ac47b48b4bd8cf9626c2484e-112358763.eu-central-1.elb.amazonaws.com   8080:31521/TCP   113m
+➜  k8s git:(master) ✗
+```
 
